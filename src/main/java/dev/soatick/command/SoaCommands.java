@@ -205,6 +205,10 @@ public final class SoaCommands {
                                 ServerSoaScheduler.avgPassMicros())).append('\n');
                 sb.append("  ").append(String.format(tr("soatick.cmd.stats.reuse"),
                                 ServerSoaScheduler.ringReuses)).append('\n');
+                sb.append("  ").append(String.format(tr("soatick.cmd.stats.mspt"),
+                                dev.soatick.server.MsptTracker.avgMs(),
+                                dev.soatick.server.MsptTracker.maxMs(),
+                                dev.soatick.server.MsptTracker.tps())).append('\n');
                 sb.append("  ").append(String.format(tr("soatick.cmd.stats.adv"),
                                 ServerSoaScheduler.totalAiDegraded,
                                 ServerSoaScheduler.totalItemHardSkipped,

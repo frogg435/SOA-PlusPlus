@@ -7,6 +7,11 @@
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green) ![Fabric](https://img.shields.io/badge/Fabric-Loader%20%E2%89%A50.15.0-yellow) ![Java](https://img.shields.io/badge/Java-17-orange) ![License](https://img.shields.io/badge/License-MIT-blue)
 
+> **v0.2.0 新增**：物品硬跳过（消失计时按真实速率快进）· AI 降级档位（不思考但会走动）·
+> 碰撞推挤跳过 · 远景掉落物自动合并 · 维度分桶 · 增量环更新 · 客户端位置平滑（消除量子移动）·
+> 异步遮挡剔除 · LOD 名牌/影子降级 · 每实体类型规则 · `/soa top|toggle|ring` 命令 ·
+> 服务端配置同步 · ModMenu 图形配置（Cloth Config）· MSPT 自测
+
 - **目标版本**：Minecraft `1.20.1` · Fabric Loader `≥0.15.0` · Java 17
 - **环境**：客户端 / 服务端 / 单人，均可运行
 - **依赖**：Fabric API；**Sodium 正交兼容**（详见下文）
@@ -207,7 +212,7 @@ JDK 17+，Gradle 8.6+（或直接用 IDEA 内置 Gradle）。
 
 1. `File → Open` 打开本项目根目录，等待 Loom 导入完成（首次需联网下载依赖）；
 2. 右侧 Gradle 面板 → `soa-tick → tasks → build → build`；
-3. 产物在 `build/libs/soa-tick-0.1.0.jar`
+3. 产物在 `build/libs/soa-tick-0.2.0.jar`
    （`-sources.jar` 是源码包，不需要装进 mods）。
 
 ### 命令行
@@ -257,12 +262,28 @@ Fabric 提供的 `Minecraft Client` 运行配置。
 | `hysteresisBlocks` | `8` | 迟滞缓冲带宽度（格） |
 | `clientMaxSlots` | `16384` | 客户端槽位上限（重启生效） |
 
+**v0.2 新增配置键**：
+
+| 字段 | 默认值 | 说明 |
+|---|---|---|
+| `itemHardSkipFromRing` | `2` | 物品硬跳过起始环（-1 关闭；生效环内掉落物停 tick 但 itemAge 按真实速率快进） |
+| `aiDegradeFromRing` | `2` | AI 降级起始环（-1 关闭；生效环内生物不思考但保留物理移动） |
+| `pushSkipFromRing` | `2` | 推挤碰撞跳过起始环（-1 关闭） |
+| `itemMerge` / `itemMergeRadius` | `true` / `2.0` | 远景掉落物自动合并（防实体海） |
+| `entityRules` | `{}` | 每实体类型规则：`{"minecraft:villager":"exempt","某mod:*":"eighth"}`，值 exempt/half/quarter/eighth |
+| `smoothDegrade` | `true` | 客户端位置平滑（多人模式经 soatick:sync 自动采用服务端阈值） |
+| `lodNametags` / `lodShadows` | `true` | LOD：>48 格跳过名牌/影子 |
+| `occlusionCulling` / `occlusionMinDistance` | `true` / `48` | 异步遮挡剔除（后台线程射线检测，fail-open） |
+
 ## 7. 命令
 
 | 命令 | 权限 | 说明 |
 |---|---|---|
 | `/soa stats` | OP(2) | 查看：槽位占用、当前维度分环分布、累计跳过/放行 Tick 数、Pass 平均耗时、本帧剔除数 |
 | `/soa reload` | OP(2) | 热重载配置文件 |
+| `/soa top` | OP(2) | 实体类型数量排行（近/中/远/极远分布），定位刷怪泛滥 |
+| `/soa toggle <feature>` | OP(2) | 实时开关功能项并写回配置（10 项：serverGating/itemHardSkip/aiDegrade/pushSkip/itemMerge/renderCulling/smoothDegrade/occlusionCulling/lodNametags/lodShadows） |
+| `/soa ring <selector>` | OP(2) | 查询单个实体的槽位/分环/距离/规则覆盖 |
 
 ## 8. 项目结构
 
@@ -313,6 +334,19 @@ mineflayer 协议机器人进服执行并采集 `/soa stats`：
 | 批量 Pass 耗时 | **0.6 ~ 0.77 µs** | 400+ 实体场景，决策层开销可忽略 |
 | 异常 | 0 | 全程无报错 |
 | `/soa reload` | ✓ | 热重载生效 |
+
+### 9.1.1 v0.2.0 A/B 与同装实测（新增）
+
+同一 1100 实体压测场景、同一硬件、15 秒采样窗（JFR 计量服务端进程 CPU）：
+
+| 配置 | 15s CPU ticks（1500=满1核） | 相对基线 |
+|---|---|---|
+| SOA++ 关闭 | 885 | — |
+| SOA++ 开启 | **494** | **-44.2%** |
+
+开启态 MSPT 自测（/soa stats）：均值 5.8~8.4 ms，TPS 全程锁定 20.0；
+与 Lithium 0.11.4 同装后进一步降至 **3.3~7.0 ms**——算法优化（Lithium）
+与调度砍伐（SOA++）叠加生效，实测互补兼容，零异常。
 
 > 诚实说明：该压测用 NoAI 僵尸（AI 成本本就近零），验证的是**调度正确性与
 > 决策层开销**，不是 MSPT 端到端收益；真实收益场景是 AI 密集实体群

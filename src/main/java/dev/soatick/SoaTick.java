@@ -40,6 +40,8 @@ public class SoaTick implements ModInitializer {
                 });
                 ServerLifecycleEvents.SERVER_STOPPED.register(server -> ServerSoaStore.reset());
 
+                dev.soatick.server.MsptTracker.register();
+
                 // 3) 命令 /soa stats|reload|top|toggle|ring + 配置同步
                 SoaCommands.register();
                 dev.soatick.sync.ConfigSync.registerServer();

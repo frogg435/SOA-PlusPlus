@@ -15,5 +15,6 @@
     "soatick.cmd.top.line": "%s × %d [near%d mid%d far%d beyond%d]",
     "soatick.cmd.toggle": "%s = %s (saved to config file)",
     "soatick.cmd.ring.untracked": "Entity not tracked by SoA (never ticked or capacity exhausted), vanilla path",
-    "soatick.cmd.ring.line": "slot %d · ring %s · distSq %.0f · rule override %s · total skipped %d / item hard-skip %d"
+    "soatick.cmd.ring.line": "slot %d · ring %s · distSq %.0f · rule override %s · total skipped %d / item hard-skip %d",
+    "soatick.cmd.stats.mspt": "Server MSPT avg %.2f / max %.2f, est. TPS %.1f"
 }

@@ -15,5 +15,6 @@
     "soatick.cmd.top.line": "%s × %d [近%d 中%d 远%d 极远%d]",
     "soatick.cmd.toggle": "%s = %s（已写回配置文件，槽位类参数需重启）",
     "soatick.cmd.ring.untracked": "该实体未被 SoA 追踪（未 tick 过或容量耗尽），走原版路径",
-    "soatick.cmd.ring.line": "槽位 %d · 环 %s · 距离² %.0f · 规则覆盖 %s · 全服累计跳过 %d / 物品硬跳 %d"
+    "soatick.cmd.ring.line": "槽位 %d · 环 %s · 距离² %.0f · 规则覆盖 %s · 全服累计跳过 %d / 物品硬跳 %d",
+    "soatick.cmd.stats.mspt": "服务端 MSPT 均值 %.2f / 峰值 %.2f，估算 TPS %.1f"
 }
