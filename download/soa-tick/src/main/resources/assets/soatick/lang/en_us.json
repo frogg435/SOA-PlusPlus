@@ -1,0 +1,13 @@
+{
+        "soatick.cmd.reload": "§a[SoA Tick] §fConfig reloaded. Slot capacity changes require a restart. 配置已重载，槽位容量等结构性参数需重启生效。",
+        "soatick.cmd.stats.header": "Data-oriented entity optimization statistics / 数据导向实体优化统计",
+        "soatick.cmd.stats.on": "§aEnabled ✓ §f(server ring gating + client render culling) 服务端分环降频 + 客户端渲染剔除运行中",
+        "soatick.cmd.stats.off": "§cDisabled ✗ §fMaster switch is off. 总开关已关闭。",
+        "soatick.cmd.stats.slots": "Server tracked slots 服务端跟踪槽位: %d / %d",
+        "soatick.cmd.stats.ring": "Ring distribution (live, all dims) 分环分布(实时/全维度) [NEAR近/MID中/FAR远/BEYOND极远]: %d / %d / %d / %d",
+        "soatick.cmd.stats.dim": "%s: NEAR近 %d / MID中 %d / FAR远 %d / BEYOND极远 %d",
+        "soatick.cmd.stats.gate": "Entity ticks skipped/ticked 累计跳过/放行: %d / %d",
+        "soatick.cmd.stats.pass": "Scheduler batch pass avg 调度批量Pass平均耗时: %.2f µs",
+        "soatick.cmd.stats.reuse": "Incremental ring reuse 增量环复用: %d (static entities skip distance recompute)",
+        "soatick.cmd.stats.client": "Client slots=%d/%d, culled last frame 本帧剔除 %d / %d 实体, cull pass %.2f µs"
+}
