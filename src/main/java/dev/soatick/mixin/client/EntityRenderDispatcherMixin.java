@@ -48,8 +48,14 @@ public abstract class EntityRenderDispatcherMixin {
                 ClientSoaPass.beginEntityRender(entity);
         }
 
+        /**
+         * renderShadow 是本类的 private static（1.20.1），因此回调必须也是
+         * static —— 非 static 回调会触发 InvalidInjectionException 直接崩溃
+         * （v0.2.0 曾因缺少 static 在启动期崩）。
+         * 标志在下一个实体的 render HEAD 被覆写，无 set/clear 泄漏路径。
+         */
         @Inject(method = "renderShadow", at = @At("HEAD"), cancellable = true)
-        private void soatick$lodShadow(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+        private static void soatick$lodShadow(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                         Entity entity, float opacity, float tickDelta, WorldView world, float radius,
                         CallbackInfo ci) {
                 if (ClientSoaPass.lodSkipShadow()) {

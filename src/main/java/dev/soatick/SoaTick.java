@@ -51,6 +51,9 @@ public class SoaTick implements ModInitializer {
                         LOGGER.info("[{}] 检测到 Sodium：本 Mod 仅做实体级决策优化，" +
                                         "与 Sodium 的区块渲染管线完全正交，可放心共存", MOD_NAME);
                 }
-                LOGGER.info("[{}] 已加载 —— 数据导向实体优化 v{}", MOD_NAME, "0.1.0");
+                String ver = FabricLoader.getInstance().getModContainer("soatick")
+                                .map(c -> c.getMetadata().getVersion().getFriendlyString())
+                                .orElse("?");
+                LOGGER.info("[{}] 已加载 —— 数据导向实体优化 v{}", MOD_NAME, ver);
         }
 }
