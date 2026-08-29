@@ -38,13 +38,15 @@ public abstract class EntityRenderDispatcherMixin {
 
         /**
          * dispatcher.render HEAD：为 LOD 影子跳过设置「按实体覆写」标志。
-         * renderShadow 是本类的 private static，随后被 render 调用——
-         * 标志在下一个实体的 render HEAD 被覆写，无 set/clear 泄漏路径。
+         * ⚠️ @Inject 回调参数必须 = 目标方法【全部】参数 + CallbackInfo
+         * （render 有 9 参：E,DDD,FF,MatrixStack,VCP,int —— v0.2.0/0.2.1
+         * 只写了前 6 参导致 Invalid descriptor 崩溃）。
          */
         @Inject(method = "render(Lnet/minecraft/entity/Entity;DDDFFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
                         at = @At("HEAD"))
         private void soatick$onEntityRender(Entity entity, double x, double y, double z,
-                        float yaw, float tickDelta, CallbackInfo ci) {
+                        float yaw, float tickDelta, MatrixStack matrices,
+                        VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
                 ClientSoaPass.beginEntityRender(entity);
         }
 
