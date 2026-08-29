@@ -1,18 +1,19 @@
 {
-	"required": true,
-	"minVersion": "0.8",
-	"package": "dev.soatick.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"mixins": [
-		"EntityMixin",
-		"LivingEntityMixin",
-		"ServerWorldMixin"
-	],
-	"client": [
-		"client.EntityRenderDispatcherMixin",
-		"client.WorldRendererMixin"
-	],
-	"injectors": {
-		"defaultRequire": 1
-	}
+        "required": true,
+        "minVersion": "0.8",
+        "package": "dev.soatick.mixin",
+        "compatibilityLevel": "JAVA_17",
+        "mixins": [
+                "EntityMixin",
+                "LivingEntityMixin",
+                "ServerWorldMixin"
+        ],
+        "client": [
+                "client.EntityRenderDispatcherMixin",
+                "client.LivingEntityRendererMixin",
+                "client.WorldRendererMixin"
+        ],
+        "injectors": {
+                "defaultRequire": 1
+        }
 }
