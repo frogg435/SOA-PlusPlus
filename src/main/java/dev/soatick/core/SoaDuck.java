@@ -21,4 +21,12 @@ public interface SoaDuck {
 
 	/** 设置 SoA 槽位号（仅由 SoaStore 分配器调用） */
 	void soatick$setSlot(int slot);
+
+	/**
+	 * 实体类型规则的缓存覆盖值（首次决策时解析，避免热路径查表）：
+	 * -2 = 未解析；-1 = 无规则；0 = 豁免（恒近环满速）；1/2/3 = 降频分母上限 2/4/8
+	 */
+	default byte soatick$getRuleOverride() { return (byte) -2; }
+
+	default void soatick$setRuleOverride(byte v) {}
 }

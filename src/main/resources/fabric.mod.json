@@ -1,34 +1,39 @@
 {
-	"schemaVersion": 1,
-	"id": "soatick",
-	"version": "${version}",
-	"name": "SoA Tick",
-	"description": "数据导向（Structure-of-Arrays）实体优化：实体热字段镜像进连续数组做纯数值决策——服务端距离分环错峰降频 Tick，客户端分类距离 + 迟滞防闪烁渲染剔除。纯逻辑零 shader，Sodium 正交兼容，PojavLauncher 友好。Data-oriented entity optimization: SoA mirrors + ring-based tick scheduling + hysteresis render culling.",
-	"authors": [
-		"SoA Tick Contributors"
-	],
-	"contact": {},
-	"license": "MIT",
-	"icon": "assets/soatick/icon.png",
-	"environment": "*",
-	"entrypoints": {
-		"main": [
-			"dev.soatick.SoaTick"
-		],
-		"client": [
-			"dev.soatick.SoaTickClient"
-		]
-	},
-	"mixins": [
-		"soatick.mixins.json"
-	],
-	"depends": {
-		"fabricloader": ">=0.15.0",
-		"minecraft": "~1.20.1",
-		"java": ">=17",
-		"fabric-api": "*"
-	},
-	"suggests": {
-		"sodium": ">=0.5.0"
-	}
+  "schemaVersion": 1,
+  "id": "soatick",
+  "version": "${version}",
+  "name": "SoA Tick",
+  "description": "数据导向（Structure-of-Arrays）实体优化：实体热字段镜像进连续数组做纯数值决策——服务端距离分环错峰降频 Tick，客户端分类距离 + 迟滞防闪烁渲染剔除。纯逻辑零 shader，Sodium 正交兼容，PojavLauncher 友好。Data-oriented entity optimization: SoA mirrors + ring-based tick scheduling + hysteresis render culling.",
+  "authors": [
+    "SoA Tick Contributors"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/soatick/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.soatick.SoaTick"
+    ],
+    "client": [
+      "dev.soatick.SoaTickClient"
+    ],
+    "modmenu": [
+      "dev.soatick.client.gui.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "soatick.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "sodium": ">=0.5.0",
+    "modmenu": "*",
+    "cloth-config2": "*"
+  }
 }

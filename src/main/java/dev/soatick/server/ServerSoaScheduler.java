@@ -340,7 +340,16 @@ public final class ServerSoaScheduler {
 
                 ServerSoaStore st = ServerSoaStore.get();
                 byte ring = st.ring[s];
-                int div = cfg.divisorForRing(ring);
+
+                // 每实体类型规则：首次决策解析，缓存进鸭子字段（热路径零查表）
+                byte ov = ((SoaDuck) entity).soatick$getRuleOverride();
+                if (ov == (byte) -2) {
+                        ov = cfg.resolveRule(entity.getType());
+                        ((SoaDuck) entity).soatick$setRuleOverride(ov);
+                }
+                if (ov == 0) return Decision.TICK;          // 类型豁免：恒满速原版
+
+                int div = cfg.applyDivisorCap(cfg.divisorForRing(ring), ov);
 
                 // 物品硬跳过：先于错峰判定；每个被跳过的 tick 快进 1 itemAge，
                 // 与原版 tick 内的 ++itemAge 等价——消失计时按真实速率推进
@@ -389,6 +398,10 @@ public final class ServerSoaScheduler {
                 if (sa < 0) return false;
                 int sb = ((SoaDuck) b).soatick$getSlot();
                 if (sb < 0) return false;
+
+                // 类型豁免：任一方被规则豁免则不取消推挤
+                if (((SoaDuck) a).soatick$getRuleOverride() == 0
+                                || ((SoaDuck) b).soatick$getRuleOverride() == 0) return false;
 
                 ServerSoaStore st = ServerSoaStore.get();
                 boolean skip = st.ring[sa] >= threshold || st.ring[sb] >= threshold;

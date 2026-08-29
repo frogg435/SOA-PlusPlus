@@ -48,6 +48,20 @@ public abstract class EntityMixin implements SoaDuck, SoaClientDuck {
                 this.soatick$slot = slot;
         }
 
+        /** 实体类型规则覆盖缓存（-2 未解析），见 SoaDuck 注释 */
+        @Unique
+        private byte soatick$ruleOverride = (byte) -2;
+
+        @Override
+        public byte soatick$getRuleOverride() {
+                return this.soatick$ruleOverride;
+        }
+
+        @Override
+        public void soatick$setRuleOverride(byte v) {
+                this.soatick$ruleOverride = v;
+        }
+
         /** 客户端重插值状态（懒创建；服务端分支从不调用，恒为 null） */
         @Unique
         private SmoothingState soatick$smoothing;

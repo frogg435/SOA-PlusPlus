@@ -55,12 +55,14 @@ public final class ClientSmoothing {
                 MinecraftClient mc = MinecraftClient.getInstance();
                 if (mc.player == null || mc.player.isRemoved()) return;
 
-                // 按到本地玩家的距离近似分环（复用服务端距离阈值与分母配置）
+                // 按到本地玩家的距离求有效分母：
+                // 收到过服务端同步包 → 用服务端真实阈值/分母（多人精确）；
+                // 否则退回本地配置近似（单人同进程本就一致）
                 double dx = e.getX() - mc.player.getX();
                 double dy = e.getY() - mc.player.getY();
                 double dz = e.getZ() - mc.player.getZ();
                 double dSq = dx * dx + dy * dy + dz * dz;
-                int div = cfg.divisorForRing(ringOf(dSq, cfg));
+                int div = dev.soatick.sync.ServerSyncStore.smoothDivisorFor(dSq);
                 SmoothingState sm = d.soatick$getSmoothing();
 
                 if (div <= 1) {
@@ -103,12 +105,4 @@ public final class ClientSmoothing {
                 e.setPitch(MathHelper.lerp(t, sm.pitch0, sm.pitch1));
         }
 
-        /** 与服务端 ringOf 相同的阈值判定（复用配置距离） */
-        private static byte ringOf(double dSq, SoaConfig cfg) {
-                int r = dSq < cfg.nearDistance * cfg.nearDistance
-                                ? 0 : dSq < cfg.midDistance * cfg.midDistance
-                                ? 1 : dSq < cfg.farDistance * cfg.farDistance
-                                ? 2 : 3;
-                return (byte) r;
-        }
 }

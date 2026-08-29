@@ -119,6 +119,43 @@ public final class SoaConfig {
         /** 遮挡检测的最近距离：更近的实体直接视为可见（省射线） */
         public double occlusionMinDistance = 48.0D;
 
+        // ==================== 服务端：每实体类型规则（v0.2） ====================
+        /**
+         * 按实体类型/模组前缀覆盖默认调度行为（整合包兼容刚需）。
+         * 键：精确 ID（"minecraft:villager"）或命名空间通配（"some-mod:*"）；
+         * 值："exempt"（豁免，恒满速）| "half"（分母上限2）| "quarter"（上限4）| "eighth"（上限8）。
+         * 例：{"minecraft:villager": "exempt", "some-mod:*": "eighth"}
+         */
+        public java.util.Map<String, String> entityRules = new java.util.HashMap<>();
+
+        /**
+         * 解析某实体类型的规则覆盖（首次调用后由鸭子字段缓存，不在热路径反复查表）。
+         * 返回：-1 无规则；0 豁免；1/2/3 分母上限 2/4/8。
+         */
+        public byte resolveRule(net.minecraft.entity.EntityType<?> type) {
+                if (entityRules == null || entityRules.isEmpty()) return (byte) -1;
+                String id = net.minecraft.entity.EntityType.getId(type).toString();
+                String v = entityRules.get(id);
+                if (v == null) {
+                        String ns = id.substring(0, id.indexOf(':') + 1) + '*';
+                        v = entityRules.get(ns);
+                }
+                if (v == null) return (byte) -1;
+                return switch (v.toLowerCase()) {
+                        case "exempt" -> (byte) 0;
+                        case "half" -> (byte) 1;
+                        case "quarter" -> (byte) 2;
+                        case "eighth" -> (byte) 3;
+                        default -> (byte) -1;
+                };
+        }
+
+        /** 应用规则覆盖后的有效分母（exempt 由调用方单独短路） */
+        public int applyDivisorCap(int div, byte override) {
+                if (override < 1) return div;
+                return Math.min(div, 1 << override);
+        }
+
         // ==================== 存取 ====================
 
         public static SoaConfig get() {
@@ -129,6 +166,16 @@ public final class SoaConfig {
         public static void reload() {
                 instance = load();
                 LOGGER.info("[SoA Tick] 配置已重载（槽位上限等结构性参数需重启生效）");
+        }
+
+        /** /soa toggle 后立即写盘 */
+        public static void save() {
+                try {
+                        Files.createDirectories(PATH.getParent());
+                        Files.writeString(PATH, GSON.toJson(instance), StandardCharsets.UTF_8);
+                } catch (Exception ex) {
+                        LOGGER.warn("[SoA Tick] 配置写盘失败: {}", ex.toString());
+                }
         }
 
         private static SoaConfig load() {

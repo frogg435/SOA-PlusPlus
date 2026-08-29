@@ -20,34 +20,35 @@ import org.slf4j.LoggerFactory;
  */
 public class SoaTick implements ModInitializer {
 
-	public static final String MOD_ID = "soatick";
-	public static final String MOD_NAME = "SoA Tick";
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
+        public static final String MOD_ID = "soatick";
+        public static final String MOD_NAME = "SoA Tick";
+        public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
-	@Override
-	public void onInitialize() {
-		// 1) 配置先行：SoA 存储的单例容量在首次创建时读取配置
-		SoaConfig cfg = SoaConfig.get();
+        @Override
+        public void onInitialize() {
+                // 1) 配置先行：SoA 存储的单例容量在首次创建时读取配置
+                SoaConfig cfg = SoaConfig.get();
 
-		// 2) 生命周期：服务器启停时重建/回收服务端 SoA 存储
-		//    （槽位号长在实体对象上，旧世界实体随服务器一起丢弃，重建是安全的）
-		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-			ServerSoaStore.reset();
-			LOGGER.info("[{}] SoA 存储已就位：服务端槽位上限 {}，调度{}，渲染剔除{}",
-					MOD_NAME, cfg.serverMaxSlots,
-					cfg.serverGating ? "开" : "关",
-					cfg.renderCulling ? "开" : "关");
-		});
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> ServerSoaStore.reset());
+                // 2) 生命周期：服务器启停时重建/回收服务端 SoA 存储
+                //    （槽位号长在实体对象上，旧世界实体随服务器一起丢弃，重建是安全的）
+                ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+                        ServerSoaStore.reset();
+                        LOGGER.info("[{}] SoA 存储已就位：服务端槽位上限 {}，调度{}，渲染剔除{}",
+                                        MOD_NAME, cfg.serverMaxSlots,
+                                        cfg.serverGating ? "开" : "关",
+                                        cfg.renderCulling ? "开" : "关");
+                });
+                ServerLifecycleEvents.SERVER_STOPPED.register(server -> ServerSoaStore.reset());
 
-		// 3) 命令 /soa stats|reload
-		SoaCommands.register();
+                // 3) 命令 /soa stats|reload|top|toggle|ring + 配置同步
+                SoaCommands.register();
+                dev.soatick.sync.ConfigSync.registerServer();
 
-		// 4) 兼容性提示
-		if (FabricLoader.getInstance().isModLoaded("sodium")) {
-			LOGGER.info("[{}] 检测到 Sodium：本 Mod 仅做实体级决策优化，" +
-					"与 Sodium 的区块渲染管线完全正交，可放心共存", MOD_NAME);
-		}
-		LOGGER.info("[{}] 已加载 —— 数据导向实体优化 v{}", MOD_NAME, "0.1.0");
-	}
+                // 4) 兼容性提示
+                if (FabricLoader.getInstance().isModLoaded("sodium")) {
+                        LOGGER.info("[{}] 检测到 Sodium：本 Mod 仅做实体级决策优化，" +
+                                        "与 Sodium 的区块渲染管线完全正交，可放心共存", MOD_NAME);
+                }
+                LOGGER.info("[{}] 已加载 —— 数据导向实体优化 v{}", MOD_NAME, "0.1.0");
+        }
 }
