@@ -59,6 +59,30 @@ public final class SoaConfig {
         /** 载具与乘客豁免降频（保证骑乘/矿车手感） */
         public boolean exemptVehiclesAndPassengers = true;
 
+        // ==================== 服务端：进阶砍伐（v0.2） ====================
+        /**
+         * 物品硬跳过起始环（-1=关闭，0-3=从该环起生效，默认 2=远环）。
+         * 生效环内的掉落物完全停止 tick（含合并/浮力），但消失计时按真实速率
+         * 快进（每个被跳过的 tick +1 age），不会出现「远处掉落物永不消失」。
+         */
+        public int itemHardSkipFromRing = 2;
+        /**
+         * AI 降级起始环（-1=关闭，默认 2=远环）。
+         * 生效环内的生物本 tick 放行但砍掉 AI（目标选择器/导航/Brain），
+         * 保留物理与移动——比整体跳过更平滑，远处怪仍会走动但不再思考。
+         */
+        public int aiDegradeFromRing = 2;
+        /**
+         * 推挤碰撞跳过起始环（-1=关闭，默认 2=远环）。
+         * 只要推挤双方任一方在生效环内，这对实体间的 push 交互直接取消——
+         * 大型怪堆场景的 CPU 大头之一。
+         */
+        public int pushSkipFromRing = 2;
+        /** 远景掉落物自动合并开关（配合物品硬跳过，防止远处实体数堆积） */
+        public boolean itemMerge = true;
+        /** 合并搜索半径（格）：同距离内同种掉落物会被吸入较大堆 */
+        public double itemMergeRadius = 2.0D;
+
         /** 服务端 SoA 槽位上限（改动需重启服务器生效） */
         public int serverMaxSlots = 32768;
 
@@ -84,11 +108,7 @@ public final class SoaConfig {
         public int clientMaxSlots = 16384;
 
         // ==================== 客户端：观感与进阶剔除（v0.2） ====================
-        /**
-         * 降频实体位置平滑：客户端对远处实体的位置包做 div 步重插值，
-         * 消除「滑行-冻结」的量子移动观感。多人模式下按到本地玩家的
-         * 距离近似分环（单人精确）。
-         */
+        /** 降频实体位置平滑：客户端对远处实体的位置包做 div 步重插值，消除量子移动观感 */
         public boolean smoothDegrade = true;
         /** LOD：超过 48 格的实体不渲染名牌 */
         public boolean lodNametags = true;
@@ -137,6 +157,9 @@ public final class SoaConfig {
                 midDivisor = pow2(midDivisor);
                 farDivisor = pow2(farDivisor);
                 beyondDivisor = pow2(beyondDivisor);
+                itemHardSkipFromRing = clampRing(itemHardSkipFromRing);
+                aiDegradeFromRing = clampRing(aiDegradeFromRing);
+                pushSkipFromRing = clampRing(pushSkipFromRing);
                 livingRenderDistance = clampMin(livingRenderDistance, 0.0D);
                 itemRenderDistance = clampMin(itemRenderDistance, 0.0D);
                 xpOrbRenderDistance = clampMin(xpOrbRenderDistance, 0.0D);
@@ -156,6 +179,12 @@ public final class SoaConfig {
                 if (v < 1) return 1;
                 v = Math.min(v, 64);
                 return Integer.highestOneBit(v);
+        }
+
+        /** 环阈值钳制：合法域 {-1, 0, 1, 2, 3}，-1 = 关闭 */
+        private static int clampRing(int v) {
+                if (v < 0) return -1;
+                return Math.min(v, 3);
         }
 
         /** 环号 → 降频分母（2 的幂，供位运算调度使用） */

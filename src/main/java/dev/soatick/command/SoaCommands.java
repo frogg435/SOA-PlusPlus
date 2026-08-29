@@ -78,6 +78,8 @@ public final class SoaCommands {
                                 ServerSoaScheduler.totalSkipped, ServerSoaScheduler.totalTicked)).append('\n');
                 sb.append("  ").append(String.format(tr("soatick.cmd.stats.pass"),
                                 ServerSoaScheduler.avgPassMicros())).append('\n');
+                sb.append("  ").append(String.format(tr("soatick.cmd.stats.reuse"),
+                                ServerSoaScheduler.ringReuses)).append('\n');
 
                 // 客户端（仅单人/客户端环境）
                 if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {

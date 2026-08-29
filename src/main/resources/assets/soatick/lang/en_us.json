@@ -8,5 +8,6 @@
         "soatick.cmd.stats.dim": "%s: NEAR近 %d / MID中 %d / FAR远 %d / BEYOND极远 %d",
         "soatick.cmd.stats.gate": "Entity ticks skipped/ticked 累计跳过/放行: %d / %d",
         "soatick.cmd.stats.pass": "Scheduler batch pass avg 调度批量Pass平均耗时: %.2f µs",
+        "soatick.cmd.stats.reuse": "Incremental ring reuse 增量环复用: %d (static entities skip distance recompute)",
         "soatick.cmd.stats.client": "Client slots=%d/%d, culled last frame 本帧剔除 %d / %d 实体, cull pass %.2f µs"
 }

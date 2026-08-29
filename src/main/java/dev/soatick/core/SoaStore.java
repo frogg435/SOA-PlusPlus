@@ -85,6 +85,13 @@ public abstract class SoaStore {
         public final Entity[] entities;
         /** 槽位所属维度（RegistryKey，interned 单例，可 == 比较） */
         public final Object[] dims;
+        /** 实体年龄（Entity.age，掉落物消失计时/合并逻辑用） */
+        public final int[] age;
+        /** 上次分环计算时的位置快照（float 足够：仅用于「动没动」的位相等比较）
+         *  增量环更新：实体没动且玩家位移有界时，直接沿用旧环，跳过距离计算 */
+        public final float[] lastRingX, lastRingY, lastRingZ;
+        /** 快照是否有效（新槽位 / 重置后为 false，强制首轮全量计算） */
+        public final boolean[] ringValid;
 
         // ===================== 槽位分配器 =====================
 
@@ -97,6 +104,60 @@ public abstract class SoaStore {
         public int occupiedCount;
         /** occupied 的反查表，实现 O(1) 交换删除 */
         private final int[] occupiedIndex;
+
+        /**
+         * 维度分桶：每个维度一个稠密列表，调度 Pass 只扫本维度桶，
+         * 不再全量扫 occupied[] 后逐个过滤维度。
+         * RegistryKey 是 interned 单例，用 IdentityHashMap 零装箱、身份比较。
+         */
+        private final java.util.IdentityHashMap<Object, DimBucket> buckets =
+                        new java.util.IdentityHashMap<>();
+        /** 槽位在所属维度桶内的下标（-1 = 不在任何桶），O(1) 交换删除用 */
+        private final int[] bucketPos;
+
+        /** 单个维度的稠密桶（slots 非以便扩容） */
+        public static final class DimBucket {
+                public int[] slots;
+                public int count;
+                DimBucket() { slots = new int[256]; }
+        }
+
+        /** 取某维度桶（不存在则建空桶）；仅调度 Pass 与统计使用 */
+        public final DimBucket bucketOf(Object dim) {
+                DimBucket b = buckets.get(dim);
+                if (b == null) {
+                        b = new DimBucket();
+                        buckets.put(dim, b);
+                }
+                return b;
+        }
+
+        private void bucketAdd(Object dim, int s) {
+                DimBucket b = buckets.get(dim);
+                if (b == null) {
+                        b = new DimBucket();
+                        buckets.put(dim, b);
+                }
+                if (b.count == b.slots.length) {
+                        // 桶满：倍增扩容
+                        b.slots = java.util.Arrays.copyOf(b.slots, b.slots.length * 2);
+                }
+                bucketPos[s] = b.count;
+                b.slots[b.count++] = s;
+        }
+
+        private void bucketRemove(int s) {
+                Object dim = dims[s];
+                if (dim == null) return;
+                DimBucket b = buckets.get(dim);
+                if (b == null) return;
+                int idx = bucketPos[s];
+                if (idx < 0 || idx >= b.count) return;
+                int lastSlot = b.slots[--b.count];
+                b.slots[idx] = lastSlot;
+                bucketPos[lastSlot] = idx;
+                bucketPos[s] = -1;
+        }
 
         public final int capacity;
 
@@ -118,6 +179,13 @@ public abstract class SoaStore {
                 this.visible = new byte[capacity];
                 this.entities = new Entity[capacity];
                 this.dims = new Object[capacity];
+                this.age = new int[capacity];
+                this.lastRingX = new float[capacity];
+                this.lastRingY = new float[capacity];
+                this.lastRingZ = new float[capacity];
+                this.ringValid = new boolean[capacity];
+                this.bucketPos = new int[capacity];
+                java.util.Arrays.fill(bucketPos, -1);
 
                 this.freeStack = new int[capacity];
                 for (int i = 0; i < capacity; i++) freeStack[i] = i;
@@ -135,6 +203,8 @@ public abstract class SoaStore {
                 occupied[occupiedCount++] = s;
                 ring[s] = SoaFlags.RING_NEAR;    // 新实体先按最近处理，下一轮 Pass 修正
                 visible[s] = 1;                  // 新实体先按可见处理，下一帧 Pass 修正
+                bucketPos[s] = -1;               // 尚未入桶，refresh() 首次快照时入桶
+                ringValid[s] = false;            // 强制首轮全量距离计算
                 return s;
         }
 
@@ -143,12 +213,15 @@ public abstract class SoaStore {
                 if (s < 0 || s >= capacity) return;
                 int idx = occupiedIndex[s];
                 if (idx < 0) return;
+                bucketRemove(s);                 // 同步从维度桶移除
                 int last = occupied[--occupiedCount];
                 occupied[idx] = last;
                 occupiedIndex[last] = idx;
                 occupiedIndex[s] = -1;
                 entities[s] = null;
                 flags[s] = 0;
+                dims[s] = null;
+                ringValid[s] = false;
         }
 
         /** 整体重置（断线 / 关服时调用：全部槽位回收，实体对象引用清空防泄漏）。
@@ -156,11 +229,15 @@ public abstract class SoaStore {
         public final void clearAll() {
                 occupiedCount = 0;
                 freeTop = capacity - 1;
+                buckets.clear();
                 for (int i = 0; i < capacity; i++) {
                         freeStack[i] = i;
                         occupiedIndex[i] = -1;
                         entities[i] = null;
                         flags[i] = 0;
+                        dims[i] = null;
+                        bucketPos[i] = -1;
+                        ringValid[i] = false;
                 }
         }
 
@@ -202,23 +279,33 @@ public abstract class SoaStore {
                 ) * 0.5D + 0.5D);
                 radius[s] = half;
 
-                // RegistryKey 是 interned 单例，身份比较即可
-                dims[s] = e.getWorld().getRegistryKey();
+                // RegistryKey 是 interned 单例，身份比较即可；
+                // 维度变化时同步迁移维度桶（正常流程是旧实体 remove + 新实体新建，
+                // 这里只是 belt-and-braces：万一有实体跨维度复用槽位也保证桶一致）
+                Object newDim = e.getWorld().getRegistryKey();
+                if (dims[s] != newDim) {
+                        if (dims[s] != null) bucketRemove(s);
+                        dims[s] = newDim;
+                        bucketAdd(newDim, s);
+                }
 
                 int f = 0;
                 if (e.isAlive()) f |= SoaFlags.ALIVE;
                 if (e instanceof PlayerEntity) f |= SoaFlags.PLAYER;
                 if (e instanceof LivingEntity) f |= SoaFlags.LIVING;
+                if (e instanceof MobEntity) f |= SoaFlags.MOB;
                 if (e instanceof WitherEntity || e instanceof EnderDragonEntity) f |= SoaFlags.BOSS;
                 if (e.hasPassengers()) f |= SoaFlags.VEHICLE;
                 if (e.hasVehicle()) f |= SoaFlags.PASSENGER;
                 if (e.getCustomName() != null) f |= SoaFlags.NAMED;
                 if (e instanceof MobEntity mob && mob.isLeashed()) f |= SoaFlags.LEASHED;
+                if (e.isOnGround()) f |= SoaFlags.ON_GROUND;
                 flags[s] = f;
 
                 if ((f & SoaFlags.LIVING) != 0) {
                         health[s] = ((LivingEntity) e).getHealth();
                 }
+                age[s] = e.age;
                 category[s] = categoryOf(e);
         }
 

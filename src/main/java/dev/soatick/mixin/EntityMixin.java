@@ -6,6 +6,8 @@ import dev.soatick.core.SoaClientDuck.SmoothingState;
 import dev.soatick.core.SoaDuck;
 import dev.soatick.core.SoaWrite;
 import dev.soatick.server.ServerSoaScheduler;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -95,20 +97,30 @@ public abstract class EntityMixin implements SoaDuck, SoaClientDuck {
 
         // ===================== 客户端位置平滑 =====================
 
+        /** 仅客户端环境才允许触碰 ClientSmoothing（它引用仅客户端类，
+         *  专用服务器上提前加载会 NoClassDefFoundError；分支不执行则永不解析） */
+        @Unique
+        private static boolean soatick$isClient() {
+                return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+        }
+
         @Inject(method = "updateTrackedPositionAndAngles(DDDFFIZ)V", at = @At("HEAD"))
         private void soatick$onTrackedUpdateHead(double x, double y, double z, float yaw, float pitch,
                         int steps, boolean rotate, CallbackInfo ci) {
+                if (!soatick$isClient()) return;
                 ClientSmoothing.onTrackedUpdateHead((Entity) (Object) this);
         }
 
         @Inject(method = "updateTrackedPositionAndAngles(DDDFFIZ)V", at = @At("TAIL"))
         private void soatick$onTrackedUpdateTail(double x, double y, double z, float yaw, float pitch,
                         int steps, boolean rotate, CallbackInfo ci) {
+                if (!soatick$isClient()) return;
                 ClientSmoothing.onTrackedUpdateTail((Entity) (Object) this, yaw, pitch);
         }
 
         @Inject(method = "tick()V", at = @At("TAIL"))
         private void soatick$onTickTail(CallbackInfo ci) {
+                if (!soatick$isClient()) return;
                 ClientSmoothing.onClientTickTail((Entity) (Object) this);
         }
 }

@@ -53,7 +53,7 @@ public final class ClientSmoothing {
                 if (!(e instanceof SoaClientDuck d)) return;
 
                 MinecraftClient mc = MinecraftClient.getInstance();
-                if (mc.player == null || mc.player.removed) return;
+                if (mc.player == null || mc.player.isRemoved()) return;
 
                 // 按到本地玩家的距离近似分环（复用服务端距离阈值与分母配置）
                 double dx = e.getX() - mc.player.getX();
@@ -83,7 +83,8 @@ public final class ClientSmoothing {
 
                 // 撤销原版瞬移，回到视觉位置；渲染插值基于 prev→x 连续推进
                 e.setPosition(sm.x0, sm.y0, sm.z0);
-                e.setRotation(sm.yaw0, sm.pitch0);
+                e.setYaw(sm.yaw0);
+                e.setPitch(sm.pitch0);
         }
 
         /** Entity.tick TAIL：推进重插值一步 */
@@ -98,16 +99,16 @@ public final class ClientSmoothing {
                                 MathHelper.lerp(t, sm.x0, sm.x1),
                                 MathHelper.lerp(t, sm.y0, sm.y1),
                                 MathHelper.lerp(t, sm.z0, sm.z1));
-                e.setRotation(
-                                MathHelper.lerpAngleDegrees(t, sm.yaw0, sm.yaw1),
-                                MathHelper.lerp(t, sm.pitch0, sm.pitch1));
+                e.setYaw(MathHelper.lerpAngleDegrees(t, sm.yaw0, sm.yaw1));
+                e.setPitch(MathHelper.lerp(t, sm.pitch0, sm.pitch1));
         }
 
         /** 与服务端 ringOf 相同的阈值判定（复用配置距离） */
         private static byte ringOf(double dSq, SoaConfig cfg) {
-                return dSq < cfg.nearDistance * cfg.nearDistance
+                int r = dSq < cfg.nearDistance * cfg.nearDistance
                                 ? 0 : dSq < cfg.midDistance * cfg.midDistance
                                 ? 1 : dSq < cfg.farDistance * cfg.farDistance
                                 ? 2 : 3;
+                return (byte) r;
         }
 }

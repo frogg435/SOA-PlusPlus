@@ -54,6 +54,7 @@ public final class OcclusionWorker {
         private static final class OcclEntry {
                 boolean occluded;
                 long stamp;
+                Entity ref;                     // 弱生命周期: 缓存TTL内自然过期
         }
 
         static {
@@ -101,6 +102,7 @@ public final class OcclusionWorker {
                         en.occluded = false;            // 未知 → 先按可见
                         CACHE.put(id, en);
                 }
+                en.ref = e;
                 en.stamp = now;
                 QUEUE.offer(id);
         }
@@ -129,7 +131,7 @@ public final class OcclusionWorker {
                         OcclEntry en = CACHE.get(id);
                         if (en == null) continue;
                         try {
-                                en.occluded = testOcclusion(id);
+                                en.occluded = testOcclusion(en);
                         } catch (Throwable ignored) {
                                 en.occluded = false;            // fail-open
                         }
@@ -137,12 +139,12 @@ public final class OcclusionWorker {
         }
 
         /** 两条射线：实体中心 / 实体眼部，任一通视即可见 */
-        private static boolean testOcclusion(UUID id) {
+        private static boolean testOcclusion(OcclEntry en) {
                 MinecraftClient mc = MinecraftClient.getInstance();
                 ClientWorld world = mc.world;
                 if (world == null) return false;
-                Entity e = world.getEntity(id);
-                if (e == null || e.removed) return false;
+                Entity e = en.ref;
+                if (e == null || e.isRemoved()) return false;
 
                 Vec3d target = e.getPos();
                 Vec3d cam = new Vec3d(camX, camY, camZ);
